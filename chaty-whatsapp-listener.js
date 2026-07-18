@@ -1,1 +1,222 @@
+<script>
+/* ==========================================================
+   Author       : Sumon Mahmud
+   Role         : Web Analytics, Paid Ads & Tracking Specialist
+   Company      : Analytic Learner
+   Website      : https://www.analyticlearner.com
+   Country      : Bangladesh
+   Email        : itsumon91@gmail.com
+   Technology   : Google Tag Manager | GA4 | Server Side Tracking
+                  Google Ads | Meta CAPI | TikTok Events API
+                  Microsoft Clarity | Looker Studio
 
+   Plugin       : Chaty - Floating Chat Widget (Premio)
+   Tracking     : GTM Custom Listener
+   Version      : 1.0.0
+   Last Update  : 19 July 2026
+========================================================== */
+
+(function () {
+
+    var popupOpened = false;
+    var typingStarted = false;
+    var typingCount = 0;
+    var openTime = null;
+
+    function getValue(selector) {
+        var el = document.querySelector(selector);
+        return el ? el.value : "";
+    }
+
+    function pushEvent(eventName, extraData) {
+
+        var data = {
+
+            event: eventName,
+
+            tracking_tool: "Chaty",
+
+            tracking_type: "WhatsApp",
+
+            page_title: document.title,
+
+            page_url: location.href,
+
+            page_path: location.pathname,
+
+            page_hostname: location.hostname,
+
+            page_referrer: document.referrer,
+
+            page_language: document.documentElement.lang,
+
+            screen_width: window.innerWidth,
+
+            screen_height: window.innerHeight,
+
+            viewport_width: document.documentElement.clientWidth,
+
+            viewport_height: document.documentElement.clientHeight,
+
+            timestamp: new Date().toISOString()
+
+        };
+
+        if (extraData) {
+
+            for (var key in extraData) {
+
+                data[key] = extraData[key];
+
+            }
+
+        }
+
+        dataLayer.push(data);
+
+    }
+
+    /* ===========================
+       Widget Loaded
+    =========================== */
+
+    window.addEventListener("load", function () {
+
+        if (document.querySelector("#chaty-widget-0")) {
+
+            pushEvent("chaty_widget_loaded", {
+
+                widget_status: "loaded"
+
+            });
+
+        }
+
+    });
+
+    /* ===========================
+       Click Events
+    =========================== */
+
+    document.addEventListener("click", function (e) {
+
+        /* Floating Widget */
+
+        if (
+
+            e.target.closest(".chaty-i-trigger") ||
+
+            e.target.closest("#chaty-widget-0")
+
+        ) {
+
+            if (!popupOpened) {
+
+                popupOpened = true;
+
+                openTime = Date.now();
+
+                pushEvent("whatsapp_popup_open", {
+
+                    popup_status: "opened"
+
+                });
+
+            }
+
+        }
+
+        /* Popup Close */
+
+        if (
+
+            e.target.closest(".chaty-cta-close")
+
+        ) {
+
+            popupOpened = false;
+
+            pushEvent("whatsapp_popup_close", {
+
+                popup_status: "closed",
+
+                popup_duration_seconds: openTime
+                    ? Math.round((Date.now() - openTime) / 1000)
+                    : 0
+
+            });
+
+        }
+
+        /* Send Button */
+
+        if (
+
+            e.target.closest("button.chaty-whatsapp-button-button")
+
+        ) {
+
+            var message = getValue("#chaty_whatsapp_input");
+
+            pushEvent("whatsapp_message_send", {
+
+                customer_message: message,
+
+                message_length: message.length,
+
+                typing_count: typingCount
+
+            });
+
+            setTimeout(function () {
+
+                pushEvent("whatsapp_redirect", {
+
+                    redirect_status: "success"
+
+                });
+
+            }, 500);
+
+        }
+
+    });
+
+    /* ===========================
+       Typing Listener
+    =========================== */
+
+    document.addEventListener("input", function (e) {
+
+        if (
+
+            e.target.matches("#chaty_whatsapp_input")
+
+        ) {
+
+            typingCount++;
+
+            if (!typingStarted) {
+
+                typingStarted = true;
+
+                pushEvent("whatsapp_typing_start");
+
+            }
+
+            pushEvent("whatsapp_typing", {
+
+                customer_message: e.target.value,
+
+                message_length: e.target.value.length,
+
+                typing_count: typingCount
+
+            });
+
+        }
+
+    });
+
+})();
+</script>
